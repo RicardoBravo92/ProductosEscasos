@@ -13,6 +13,7 @@ interface Store {
   phone: string;
   website: string;
   createdAt: string;
+  image?: string;
 }
 
 export default function StoresPage() {
@@ -154,6 +155,14 @@ function MainContent({ stores, loading, hasMore, sortBy, order, setSortBy, setOr
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {stores.map((store: Store) => (
               <div key={store._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                {store.image && (
+                  <img
+                    src={store.image}
+                    alt={store.name}
+                    className="w-full h-48 object-cover object-center border-b"
+                    loading="lazy"
+                  />
+                )}
                 <div className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">{store.name}</h3>
                   {store.description && (

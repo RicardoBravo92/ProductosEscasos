@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Store from '@/lib/models/Store';
 import ProductPrice from '@/lib/models/ProductPrice';
+import { uploadImageToCloudinary } from '@/lib/cloudinary';
 
 // GET - Obtener una tienda específica
 export async function GET(
@@ -37,22 +38,46 @@ export async function PUT(
 ) {
   try {
     await connectDB();
-    const body = await request.json();
+    const contentType = request.headers.get('content-type') || '';
+    let body: Record<string, unknown> = {};
+    let imageBuffer: Buffer | null = null;
     const { id } = await params;
-    
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      body.name = formData.get('name')?.toString() || '';
+      body.description = formData.get('description')?.toString() || '';
+      body.address = formData.get('address')?.toString() || '';
+      body.phone = formData.get('phone')?.toString() || '';
+      body.website = formData.get('website')?.toString() || '';
+      const imageFile = formData.get('image');
+      if (imageFile && typeof imageFile === 'object' && 'arrayBuffer' in imageFile) {
+        const arrayBuffer = await imageFile.arrayBuffer();
+        imageBuffer = Buffer.from(arrayBuffer);
+      }
+    } else {
+      body = await request.json();
+    }
+
+    if (imageBuffer) {
+      const uploadResult = await uploadImageToCloudinary(imageBuffer);
+      body.image = uploadResult.secure_url;
+    }
+
+    body.updatedAt = new Date();
     const store = await Store.findByIdAndUpdate(
       id,
-      { ...body, updatedAt: new Date() },
+      body,
       { new: true, runValidators: true }
     );
-    
+
     if (!store) {
       return NextResponse.json(
         { error: 'Tienda no encontrada' },
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json(store);
   } catch (error) {
     console.error('Error updating store:', error);

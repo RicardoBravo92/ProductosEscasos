@@ -14,20 +14,23 @@ export default function AddStorePage() {
     phone: '',
     website: ''
   });
+  const [image, setImage] = useState<File | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
+      const form = new FormData();
+      form.append('name', formData.name);
+      form.append('description', formData.description);
+      form.append('address', formData.address);
+      form.append('phone', formData.phone);
+      form.append('website', formData.website);
+      if (image) form.append('image', image);
       const response = await fetch('/api/stores', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        body: form,
       });
-
       if (response.ok) {
         const store = await response.json();
         router.push(`/stores/${store._id}`);
@@ -49,6 +52,14 @@ export default function AddStorePage() {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImage(e.target.files[0]);
+    } else {
+      setImage(null);
+    }
   };
 
   return (
@@ -136,6 +147,20 @@ export default function AddStorePage() {
                   placeholder="https://www.tienda.com"
                 />
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">
+                Imagen (opcional)
+              </label>
+              <input
+                type="file"
+                id="image"
+                name="image"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
 
             <div className="flex gap-4 pt-6">

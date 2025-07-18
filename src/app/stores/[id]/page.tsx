@@ -14,6 +14,7 @@ interface Store {
   website: string;
   createdAt: string;
   updatedAt: string;
+  image?: string;
 }
 
 export default function StoreDetailPage() {
@@ -26,6 +27,8 @@ export default function StoreDetailPage() {
   const [editForm, setEditForm] = useState<Partial<Store>>({});
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const storeId = params.id as string;
 
@@ -52,21 +55,42 @@ export default function StoreDetailPage() {
     fetchStore();
   }, [fetchStore]);
 
+  useEffect(() => {
+    if (store?.image && !imageFile) {
+      setImagePreview(store.image);
+    }
+  }, [store, imageFile]);
+
   const handleSave = async () => {
     try {
       setSaving(true);
-      const response = await fetch(`/api/stores/${storeId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(editForm),
-      });
-
+      let response;
+      if (imageFile) {
+        const form = new FormData();
+        form.append('name', editForm.name || '');
+        form.append('description', editForm.description || '');
+        form.append('address', editForm.address || '');
+        form.append('phone', editForm.phone || '');
+        form.append('website', editForm.website || '');
+        form.append('image', imageFile);
+        response = await fetch(`/api/stores/${storeId}`, {
+          method: 'PUT',
+          body: form,
+        });
+      } else {
+        response = await fetch(`/api/stores/${storeId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(editForm),
+        });
+      }
       if (response.ok) {
         const updatedStore = await response.json();
         setStore(updatedStore);
         setIsEditing(false);
+        setImageFile(null);
       } else {
         const errorData = await response.json();
         setError(errorData.error || 'Error al actualizar la tienda');
@@ -103,6 +127,20 @@ export default function StoreDetailPage() {
       setError('Error al eliminar la tienda');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setImageFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setImagePreview(ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview(store?.image || null);
     }
   };
 
@@ -160,6 +198,15 @@ export default function StoreDetailPage() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
+          {store?.image && (
+            <img
+              src={store.image}
+              alt={store.name}
+              className="w-full h-64 object-cover object-center rounded mb-4 border"
+              loading="lazy"
+            />
+          )}
+    
           <div className="flex justify-between items-start mb-6">
             <div>
               {isEditing ? (
@@ -178,28 +225,7 @@ export default function StoreDetailPage() {
             <div className="flex space-x-2">
               {isEditing ? (
                 <>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                  >
-                    {saving ? 'Guardando...' : 'Guardar'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditForm({
-                        name: store.name,
-                        description: store.description,
-                        address: store.address,
-                        phone: store.phone,
-                        website: store.website
-                      });
-                    }}
-                    className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-                  >
-                    Cancelar
-                  </button>
+               
                 </>
               ) : (
                 <>
@@ -239,6 +265,32 @@ export default function StoreDetailPage() {
                 </p>
               )}
             </div>
+            {isEditing && (
+              <div>
+                <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-2">
+                  Imagen (opcional)
+                </label>
+                <input
+                  type="file"
+                  id="image"
+                  name="image"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {imagePreview && imagePreview !== store?.image && (
+                  <div className="mt-2">
+                    <span className="block text-xs text-gray-500 mb-1">Vista previa</span>
+                    <img
+                      src={imagePreview}
+                      alt={editForm.name || store.name}
+                      className="w-full h-48 object-cover object-center rounded border"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Información de contacto */}
             <div className="grid md:grid-cols-2 gap-6">
@@ -345,6 +397,34 @@ export default function StoreDetailPage() {
               </Link>
             </div>
           </div>
+          {isEditing && (
+            <div className="flex justify-end gap-2 mt-8">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+              >
+                {saving ? 'Guardando...' : 'Guardar'}
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditForm({
+                    name: store.name,
+                    description: store.description,
+                    address: store.address,
+                    phone: store.phone,
+                    website: store.website
+                  });
+                  setImageFile(null);
+                  setImagePreview(store?.image || null);
+                }}
+                className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
         </div>
       </main>
     </div>

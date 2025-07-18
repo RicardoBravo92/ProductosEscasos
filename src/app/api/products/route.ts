@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Product from '@/lib/models/Product';
+import { uploadImageToCloudinary } from '@/lib/cloudinary';
 
 // GET - Obtener todos los productos con filtros opcionales
 export async function GET(request: NextRequest) {
@@ -46,11 +47,31 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
-    const body = await request.json();
-    
+    const contentType = request.headers.get('content-type') || '';
+    let body: Record<string, unknown> = {};
+    let imageBuffer: Buffer | null = null;
+
+    if (contentType.includes('multipart/form-data')) {
+      // Usar formData API experimental de Next.js
+      const formData = await request.formData();
+      body.name = formData.get('name')?.toString() || '';
+      body.description = formData.get('description')?.toString() || '';
+      const imageFile = formData.get('image');
+      if (imageFile && typeof imageFile === 'object' && 'arrayBuffer' in imageFile) {
+        const arrayBuffer = await imageFile.arrayBuffer();
+        imageBuffer = Buffer.from(arrayBuffer);
+      }
+    } else {
+      body = await request.json();
+    }
+
+    if (imageBuffer) {
+      const uploadResult = await uploadImageToCloudinary(imageBuffer);
+      body.image = uploadResult.secure_url;
+    }
+
     const product = new Product(body);
     await product.save();
-    
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     console.error('Error creating product:', error);

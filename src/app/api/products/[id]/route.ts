@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Product from '@/lib/models/Product';
 import ProductPrice from '@/lib/models/ProductPrice';
+import { uploadImageToCloudinary } from '@/lib/cloudinary';
 
 // GET - Obtener un producto específico
 export async function GET(
@@ -37,22 +38,43 @@ export async function PUT(
 ) {
   try {
     await connectDB();
-    const body = await request.json();
+    const contentType = request.headers.get('content-type') || '';
+    let body: Record<string, unknown> = {};
+    let imageBuffer: Buffer | null = null;
     const { id } = await params;
-    
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      body.name = formData.get('name')?.toString() || '';
+      body.description = formData.get('description')?.toString() || '';
+      const imageFile = formData.get('image');
+      if (imageFile && typeof imageFile === 'object' && 'arrayBuffer' in imageFile) {
+        const arrayBuffer = await imageFile.arrayBuffer();
+        imageBuffer = Buffer.from(arrayBuffer);
+      }
+    } else {
+      body = await request.json();
+    }
+
+    if (imageBuffer) {
+      const uploadResult = await uploadImageToCloudinary(imageBuffer);
+      body.image = uploadResult.secure_url;
+    }
+
+    body.updatedAt = new Date();
     const product = await Product.findByIdAndUpdate(
       id,
-      { ...body, updatedAt: new Date() },
+      body,
       { new: true, runValidators: true }
     );
-    
+
     if (!product) {
       return NextResponse.json(
         { error: 'Producto no encontrado' },
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json(product);
   } catch (error) {
     console.error('Error updating product:', error);

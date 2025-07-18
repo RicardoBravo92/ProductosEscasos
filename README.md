@@ -149,4 +149,15 @@ Si tienes problemas o preguntas:
 1. Revisa los issues existentes
 2. Crea un nuevo issue con detalles del problema
 3. Incluye información sobre tu entorno (OS, Node.js version, etc.)
-# ProductosEscasos
+
+# Variables de entorno necesarias para Cloudinary
+
+Agrega estas variables a tu archivo `.env.local` en la raíz del proyecto:
+
+```
+CLOUDINARY_CLOUD_NAME=tu_cloud_name
+CLOUDINARY_API_KEY=tu_api_key
+CLOUDINARY_API_SECRET=tu_api_secret
+```
+
+---
