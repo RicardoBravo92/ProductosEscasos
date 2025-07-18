@@ -1,36 +1,159 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ProductosEscasos - Comparador de Precios
 
-## Getting Started
+Una aplicación web para encontrar y comparar precios de productos en diferentes tiendas. Los usuarios pueden agregar productos y tiendas, actualizar precios e indicar disponibilidad sin necesidad de registrarse.
 
-First, run the development server:
+## Características
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- 🔍 **Búsqueda de productos** - Encuentra productos por nombre, descripción o marca
+- 📊 **Comparación de precios** - Ve precios de un producto en todas las tiendas
+- 🏪 **Gestión de tiendas** - Agrega y gestiona información de tiendas
+- 📦 **Gestión de productos** - Agrega productos con imágenes y detalles
+- 💰 **Actualización de precios** - Actualiza precios y disponibilidad en tiempo real
+- 📱 **Diseño responsive** - Funciona en dispositivos móviles y desktop
+- 🔐 **Sin registro** - No requiere autenticación de usuarios
+
+## Tecnologías
+
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes
+- **Base de datos**: MongoDB con Mongoose
+- **Deployment**: Vercel (recomendado)
+
+## Configuración
+
+### Prerrequisitos
+
+- Node.js 18+ 
+- MongoDB (local o en la nube)
+
+### Instalación
+
+1. **Clona el repositorio**
+   ```bash
+   git clone <url-del-repositorio>
+   cd productos-escasos
+   ```
+
+2. **Instala las dependencias**
+   ```bash
+   npm install
+   ```
+
+3. **Configura las variables de entorno**
+   
+   Crea un archivo `.env.local` en la raíz del proyecto:
+   ```env
+   MONGODB_URI=mongodb://localhost:27017/productos-escasos
+   ```
+   
+   Para MongoDB Atlas, usa una URL como:
+   ```env
+   MONGODB_URI=mongodb+srv://usuario:password@cluster.mongodb.net/productos-escasos
+   ```
+
+4. **Inicia el servidor de desarrollo**
+   ```bash
+   npm run dev
+   ```
+
+5. **Abre tu navegador**
+   
+   Ve a [http://localhost:3000](http://localhost:3000)
+
+## Estructura del Proyecto
+
+```
+src/
+├── app/                    # App Router de Next.js
+│   ├── api/               # API Routes
+│   │   ├── products/      # CRUD de productos
+│   │   ├── stores/        # CRUD de tiendas
+│   │   ├── prices/        # Gestión de precios
+│   │   └── compare/       # Comparación de precios
+│   ├── products/          # Páginas de productos
+│   ├── stores/            # Páginas de tiendas
+│   ├── add-product/       # Formulario agregar producto
+│   └── add-store/         # Formulario agregar tienda
+├── components/            # Componentes React
+│   ├── Header.tsx         # Navegación principal
+│   └── SearchBar.tsx      # Barra de búsqueda
+└── lib/                   # Utilidades y configuración
+    ├── mongodb.ts         # Conexión a MongoDB
+    └── models/            # Modelos de Mongoose
+        ├── Product.ts     # Modelo de producto
+        ├── Store.ts       # Modelo de tienda
+        └── ProductPrice.ts # Modelo de precio
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## API Endpoints
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Productos
+- `GET /api/products` - Obtener productos (con filtros opcionales)
+- `POST /api/products` - Crear producto
+- `GET /api/products/[id]` - Obtener producto específico
+- `PUT /api/products/[id]` - Actualizar producto
+- `DELETE /api/products/[id]` - Eliminar producto
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Tiendas
+- `GET /api/stores` - Obtener tiendas
+- `POST /api/stores` - Crear tienda
+- `GET /api/stores/[id]` - Obtener tienda específica
+- `PUT /api/stores/[id]` - Actualizar tienda
+- `DELETE /api/stores/[id]` - Eliminar tienda
 
-## Learn More
+### Precios
+- `GET /api/prices` - Obtener precios (con filtros)
+- `POST /api/prices` - Crear/actualizar precio
 
-To learn more about Next.js, take a look at the following resources:
+### Comparación
+- `GET /api/compare/[productId]` - Comparar precios de un producto
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Uso
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Para Usuarios
 
-## Deploy on Vercel
+1. **Buscar productos**: Usa la barra de búsqueda en la página principal
+2. **Ver precios**: Haz clic en "Ver precios" en cualquier producto
+3. **Comparar**: Ve todos los precios disponibles ordenados de menor a mayor
+4. **Filtrar**: Usa los filtros por categoría y marca
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Para Contribuidores
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Agregar producto**: Ve a "Agregar Producto" y completa el formulario
+2. **Agregar tienda**: Ve a "Agregar Tienda" y completa la información
+3. **Actualizar precios**: En la página de comparación, agrega o actualiza precios
+
+## Deployment
+
+### Vercel (Recomendado)
+
+1. Conecta tu repositorio a Vercel
+2. Configura la variable de entorno `MONGODB_URI`
+3. Deploy automático en cada push
+
+### Otros proveedores
+
+La aplicación es compatible con cualquier proveedor que soporte Next.js:
+- Netlify
+- Railway
+- DigitalOcean App Platform
+- AWS Amplify
+
+## Contribuir
+
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
+
+## Licencia
+
+Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+
+## Soporte
+
+Si tienes problemas o preguntas:
+1. Revisa los issues existentes
+2. Crea un nuevo issue con detalles del problema
+3. Incluye información sobre tu entorno (OS, Node.js version, etc.)
