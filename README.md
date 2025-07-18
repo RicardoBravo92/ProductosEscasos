@@ -16,7 +16,7 @@ Una aplicación web para encontrar y comparar precios de productos en diferentes
 
 - **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes
-- **Base de datos**: MongoDB con Mongoose
+- **Base de datos**: Supabase (PostgreSQL)
 - **Deployment**: Vercel (recomendado)
 
 ## Configuración
@@ -24,7 +24,7 @@ Una aplicación web para encontrar y comparar precios de productos en diferentes
 ### Prerrequisitos
 
 - Node.js 18+ 
-- MongoDB (local o en la nube)
+- Cuenta en [Supabase](https://supabase.com/) y un proyecto creado
 
 ### Instalación
 
@@ -43,20 +43,28 @@ Una aplicación web para encontrar y comparar precios de productos en diferentes
    
    Crea un archivo `.env.local` en la raíz del proyecto:
    ```env
-   MONGODB_URI=mongodb://localhost:27017/productos-escasos
-   ```
-   
-   Para MongoDB Atlas, usa una URL como:
-   ```env
-   MONGODB_URI=mongodb+srv://usuario:password@cluster.mongodb.net/productos-escasos
+   NEXT_PUBLIC_SUPABASE_URL=tu_url_de_supabase
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_anon_key_de_supabase
    ```
 
-4. **Inicia el servidor de desarrollo**
+4. **Crea la base de datos en Supabase**
+
+   Ve al panel de Supabase → SQL Editor y ejecuta los scripts que están en la carpeta `supabase_sql/` en este orden:
+   
+   1. `01_create_extension.sql`
+   2. `02_create_products.sql`
+   3. `03_create_stores.sql`
+   4. `04_create_product_prices.sql`
+   5. `05_unique_index_product_store.sql`
+
+   Esto creará todas las tablas y relaciones necesarias.
+
+5. **Inicia el servidor de desarrollo**
    ```bash
    npm run dev
    ```
 
-5. **Abre tu navegador**
+6. **Abre tu navegador**
    
    Ve a [http://localhost:3000](http://localhost:3000)
 
@@ -78,11 +86,8 @@ src/
 │   ├── Header.tsx         # Navegación principal
 │   └── SearchBar.tsx      # Barra de búsqueda
 └── lib/                   # Utilidades y configuración
-    ├── mongodb.ts         # Conexión a MongoDB
-    └── models/            # Modelos de Mongoose
-        ├── Product.ts     # Modelo de producto
-        ├── Store.ts       # Modelo de tienda
-        └── ProductPrice.ts # Modelo de precio
+    ├── supabase.ts        # Cliente de Supabase
+    └── models/            # (Obsoleto, solo referencia histórica)
 ```
 
 ## API Endpoints
@@ -128,7 +133,7 @@ src/
 ### Vercel (Recomendado)
 
 1. Conecta tu repositorio a Vercel
-2. Configura la variable de entorno `MONGODB_URI`
+2. Configura las variables de entorno `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 3. Deploy automático en cada push
 
 ## Contribuir

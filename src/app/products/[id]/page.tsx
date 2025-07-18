@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Product {
   _id: string;
@@ -330,9 +331,11 @@ export default function ProductComparisonPage() {
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
           {data?.product?.image && (
-            <img
+            <Image
               src={data.product.image}
               alt={data.product.name}
+              width={600}
+              height={300}
               className="w-full h-64 object-cover object-center rounded mb-4 border"
               loading="lazy"
             />
@@ -435,9 +438,11 @@ export default function ProductComparisonPage() {
                 {imagePreview && imagePreview !== data?.product?.image && (
                   <div className="mt-2">
                     <span className="block text-xs text-gray-500 mb-1">Vista previa</span>
-                    <img
+                    <Image
                       src={imagePreview}
                       alt={editForm.name}
+                      width={600}
+                      height={300}
                       className="w-full h-48 object-cover object-center rounded border"
                       loading="lazy"
                     />

@@ -6,6 +6,7 @@ import SearchBar from '@/components/SearchBar';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import Image from 'next/image';
 
 interface Product {
   _id: string;
@@ -137,9 +138,11 @@ function MainContent() {
             {products.map((product) => (
               <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                 {product.image && (
-                  <img
+                  <Image
                     src={product.image}
                     alt={product.name}
+                    width={600}
+                    height={300}
                     className="w-full h-48 object-cover object-center border-b"
                     loading="lazy"
                   />

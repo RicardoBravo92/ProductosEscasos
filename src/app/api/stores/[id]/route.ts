@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Store from '@/lib/models/Store';
-import ProductPrice from '@/lib/models/ProductPrice';
+import { supabase } from '@/lib/supabase';
 import { uploadImageToCloudinary } from '@/lib/cloudinary';
 
 // GET - Obtener una tienda específica
@@ -10,17 +8,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
     const { id } = await params;
-    const store = await Store.findById(id);
-    
-    if (!store) {
+    const { data: store, error } = await supabase.from('stores').select('*').eq('id', id).single();
+    if (error || !store) {
       return NextResponse.json(
         { error: 'Tienda no encontrada' },
         { status: 404 }
       );
     }
-    
     return NextResponse.json(store);
   } catch (error) {
     console.error('Error fetching store:', error);
@@ -37,7 +32,6 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
     const contentType = request.headers.get('content-type') || '';
     let body: Record<string, unknown> = {};
     let imageBuffer: Buffer | null = null;
@@ -65,19 +59,13 @@ export async function PUT(
     }
 
     body.updatedAt = new Date();
-    const store = await Store.findByIdAndUpdate(
-      id,
-      body,
-      { new: true, runValidators: true }
-    );
-
-    if (!store) {
+    const { data: store, error } = await supabase.from('stores').update(body).eq('id', id).select().single();
+    if (error || !store) {
       return NextResponse.json(
         { error: 'Tienda no encontrada' },
         { status: 404 }
       );
     }
-
     return NextResponse.json(store);
   } catch (error) {
     console.error('Error updating store:', error);
@@ -94,27 +82,23 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
     const { id } = await params;
-    
-    // Verificar que la tienda existe antes de eliminar
-    const store = await Store.findById(id);
-    if (!store) {
+    // Verificar que la tienda existe
+    const { data: store, error: errorStore } = await supabase.from('stores').select('name').eq('id', id).single();
+    if (errorStore || !store) {
       return NextResponse.json(
         { error: 'Tienda no encontrada' },
         { status: 404 }
       );
     }
-    
     // Eliminar todos los precios de productos asociados a esta tienda
-    const deletedPrices = await ProductPrice.deleteMany({ storeId: id });
-    
+    const { count: deletedPrices } = await supabase.from('product_prices').delete({ count: 'exact' }).eq('storeId', id).select('id');
     // Eliminar la tienda
-    await Store.findByIdAndDelete(id);
-    
+    const { error: errorDelete } = await supabase.from('stores').delete().eq('id', id);
+    if (errorDelete) throw errorDelete;
     return NextResponse.json({ 
       message: 'Tienda eliminada exitosamente',
-      deletedPrices: deletedPrices.deletedCount,
+      deletedPrices,
       storeName: store.name
     });
   } catch (error) {

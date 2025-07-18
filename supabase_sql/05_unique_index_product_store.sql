@@ -1,0 +1,1 @@
+create unique index unique_product_store on product_prices("productId", "storeId"); 

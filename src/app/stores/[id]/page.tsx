@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Store {
   _id: string;
@@ -199,9 +200,11 @@ export default function StoreDetailPage() {
 
         <div className="bg-white rounded-lg shadow-md p-6">
           {store?.image && (
-            <img
+            <Image
               src={store.image}
               alt={store.name}
+              width={600}
+              height={300}
               className="w-full h-64 object-cover object-center rounded mb-4 border"
               loading="lazy"
             />
@@ -278,12 +281,14 @@ export default function StoreDetailPage() {
                   onChange={handleImageChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                {imagePreview && imagePreview !== store?.image && (
+                {imagePreview && (
                   <div className="mt-2">
                     <span className="block text-xs text-gray-500 mb-1">Vista previa</span>
-                    <img
+                    <Image
                       src={imagePreview}
                       alt={editForm.name || store.name}
+                      width={600}
+                      height={300}
                       className="w-full h-48 object-cover object-center rounded border"
                       loading="lazy"
                     />

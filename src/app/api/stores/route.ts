@@ -1,35 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Store from '@/lib/models/Store';
+import { supabase } from '@/lib/supabase';
 import { uploadImageToCloudinary } from '@/lib/cloudinary';
 
 // GET - Obtener todas las tiendas
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
     const { searchParams } = new URL(request.url);
+    let query = supabase.from('stores').select('*');
+
+    // Filtro de búsqueda opcional
+    const search = searchParams.get('search');
+    if (search) {
+      query = query.ilike('name', `%${search}%`);
+    }
 
     // Paginado y ordenamiento
     const skip = parseInt(searchParams.get('skip') || '0', 10);
     const limit = parseInt(searchParams.get('limit') || '12', 10);
     const sortBy = searchParams.get('sortBy') || 'createdAt';
-    const order = searchParams.get('order') === 'asc' ? 1 : -1;
+    const order = searchParams.get('order') === 'asc' ? 'asc' : 'desc';
     const validSortFields = ['createdAt', 'name'];
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
 
-    // Filtro de búsqueda opcional
-    const query: Record<string, unknown> = {};
-    if (searchParams.get('search')) {
-      query.$or = [
-        { name: { $regex: searchParams.get('search'), $options: 'i' } },
-        { description: { $regex: searchParams.get('search'), $options: 'i' } }
-      ];
-    }
+    query = query.order(sortField, { ascending: order === 'asc' });
+    query = query.range(skip, skip + limit - 1);
 
-    const stores = await Store.find(query)
-      .sort({ [sortField]: order })
-      .skip(skip)
-      .limit(limit);
+    const { data: stores, error } = await query;
+    if (error) throw error;
     return NextResponse.json(stores);
   } catch (error) {
     console.error('Error fetching stores:', error);
@@ -43,7 +40,6 @@ export async function GET(request: NextRequest) {
 // POST - Crear una nueva tienda
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
     const contentType = request.headers.get('content-type') || '';
     let body: Record<string, unknown> = {};
     let imageBuffer: Buffer | null = null;
@@ -70,9 +66,10 @@ export async function POST(request: NextRequest) {
       body.image = uploadResult.secure_url;
     }
 
-    const store = new Store(body);
-    await store.save();
-    return NextResponse.json(store, { status: 201 });
+    // Insertar tienda en Supabase
+    const { data, error } = await supabase.from('stores').insert([body]).select().single();
+    if (error) throw error;
+    return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error('Error creating store:', error);
     return NextResponse.json(

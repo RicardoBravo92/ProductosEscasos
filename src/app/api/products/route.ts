@@ -1,38 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Product from '@/lib/models/Product';
+import { supabase } from '@/lib/supabase';
 import { uploadImageToCloudinary } from '@/lib/cloudinary';
 
 // GET - Obtener todos los productos con filtros opcionales
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
     const { searchParams } = new URL(request.url);
-    
-    const query: Record<string, unknown> = {};
-    
+    let query = supabase.from('products').select('*');
+
     // Filtros opcionales
-    if (searchParams.get('search')) {
-      query.$or = [
-        { name: { $regex: searchParams.get('search'), $options: 'i' } },
-        { description: { $regex: searchParams.get('search'), $options: 'i' } }
-      ];
+    const search = searchParams.get('search');
+    if (search) {
+      query = query.ilike('name', `%${search}%`);
     }
-    
+
     // Paginado y ordenamiento
     const skip = parseInt(searchParams.get('skip') || '0', 10);
     const limit = parseInt(searchParams.get('limit') || '12', 10);
     const sortBy = searchParams.get('sortBy') || 'createdAt';
-    const order = searchParams.get('order') === 'asc' ? 1 : -1;
-
-    // Validar sortBy
+    const order = searchParams.get('order') === 'asc' ? 'asc' : 'desc';
     const validSortFields = ['createdAt', 'name'];
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
 
-    const products = await Product.find(query)
-      .sort({ [sortField]: order })
-      .skip(skip)
-      .limit(limit);
+    query = query.order(sortField, { ascending: order === 'asc' });
+    query = query.range(skip, skip + limit - 1);
+
+    const { data: products, error } = await query;
+    if (error) throw error;
     return NextResponse.json(products);
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -46,7 +40,6 @@ export async function GET(request: NextRequest) {
 // POST - Crear un nuevo producto
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
     const contentType = request.headers.get('content-type') || '';
     let body: Record<string, unknown> = {};
     let imageBuffer: Buffer | null = null;
@@ -70,9 +63,10 @@ export async function POST(request: NextRequest) {
       body.image = uploadResult.secure_url;
     }
 
-    const product = new Product(body);
-    await product.save();
-    return NextResponse.json(product, { status: 201 });
+    // Insertar producto en Supabase
+    const { data, error } = await supabase.from('products').insert([body]).select().single();
+    if (error) throw error;
+    return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error('Error creating product:', error);
     return NextResponse.json(

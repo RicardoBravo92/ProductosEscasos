@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Product from '@/lib/models/Product';
-import ProductPrice from '@/lib/models/ProductPrice';
+import { supabase } from '@/lib/supabase';
 import { uploadImageToCloudinary } from '@/lib/cloudinary';
 
 // GET - Obtener un producto específico
@@ -10,17 +8,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
     const { id } = await params;
-    const product = await Product.findById(id);
-    
-    if (!product) {
+    const { data: product, error } = await supabase.from('products').select('*').eq('id', id).single();
+    if (error || !product) {
       return NextResponse.json(
         { error: 'Producto no encontrado' },
         { status: 404 }
       );
     }
-    
     return NextResponse.json(product);
   } catch (error) {
     console.error('Error fetching product:', error);
@@ -37,7 +32,6 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
     const contentType = request.headers.get('content-type') || '';
     let body: Record<string, unknown> = {};
     let imageBuffer: Buffer | null = null;
@@ -62,19 +56,13 @@ export async function PUT(
     }
 
     body.updatedAt = new Date();
-    const product = await Product.findByIdAndUpdate(
-      id,
-      body,
-      { new: true, runValidators: true }
-    );
-
-    if (!product) {
+    const { data: product, error } = await supabase.from('products').update(body).eq('id', id).select().single();
+    if (error || !product) {
       return NextResponse.json(
         { error: 'Producto no encontrado' },
         { status: 404 }
       );
     }
-
     return NextResponse.json(product);
   } catch (error) {
     console.error('Error updating product:', error);
@@ -91,27 +79,23 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
     const { id } = await params;
-    
-    // Verificar que el producto existe antes de eliminar
-    const product = await Product.findById(id);
-    if (!product) {
+    // Verificar que el producto existe
+    const { data: product, error: errorProduct } = await supabase.from('products').select('name').eq('id', id).single();
+    if (errorProduct || !product) {
       return NextResponse.json(
         { error: 'Producto no encontrado' },
         { status: 404 }
       );
     }
-    
-    // Eliminar todos los precios de este producto en todas las tiendas
-    const deletedPrices = await ProductPrice.deleteMany({ productId: id });
-    
+    // Eliminar todos los precios de este producto
+    const { count: deletedPrices } = await supabase.from('product_prices').delete({ count: 'exact' }).eq('productId', id).select('id');
     // Eliminar el producto
-    await Product.findByIdAndDelete(id);
-    
+    const { error: errorDelete } = await supabase.from('products').delete().eq('id', id);
+    if (errorDelete) throw errorDelete;
     return NextResponse.json({ 
       message: 'Producto eliminado exitosamente',
-      deletedPrices: deletedPrices.deletedCount,
+      deletedPrices,
       productName: product.name
     });
   } catch (error) {

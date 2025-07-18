@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense, useCallback } from 'react';
 import Header from '@/components/Header';
 import Link from 'next/link';
 import SearchBar from '@/components/SearchBar';
+import Image from 'next/image';
 
 interface Store {
   _id: string;
@@ -156,9 +157,11 @@ function MainContent({ stores, loading, hasMore, sortBy, order, setSortBy, setOr
             {stores.map((store: Store) => (
               <div key={store._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                 {store.image && (
-                  <img
+                  <Image
                     src={store.image}
                     alt={store.name}
+                    width={600}
+                    height={300}
                     className="w-full h-48 object-cover object-center border-b"
                     loading="lazy"
                   />
