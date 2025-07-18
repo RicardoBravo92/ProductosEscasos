@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     await connectDB();
     const { searchParams } = new URL(request.url);
     
-    const query: any = {};
+    const query: Record<string, unknown> = {};
     
     // Filtros opcionales
     if (searchParams.get('search')) {

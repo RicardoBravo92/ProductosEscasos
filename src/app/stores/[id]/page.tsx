@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Link from 'next/link';
@@ -29,39 +29,28 @@ export default function StoreDetailPage() {
 
   const storeId = params.id as string;
 
-  useEffect(() => {
-    if (storeId) {
-      fetchStore();
-    }
-  }, [storeId]);
-
-  const fetchStore = async () => {
+  const fetchStore = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
-      const response = await fetch(`/api/stores/${storeId}`);
-      
+      const response = await fetch(`/api/stores/${params.id}`);
+      const data = await response.json();
       if (response.ok) {
-        const data = await response.json();
         setStore(data);
-        setEditForm({
-          name: data.name,
-          description: data.description,
-          address: data.address,
-          phone: data.phone,
-          website: data.website
-        });
       } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Error al cargar la tienda');
+        alert('Error al cargar la tienda');
+        router.push('/stores');
       }
     } catch (error) {
       console.error('Error fetching store:', error);
-      setError('Error al cargar la tienda');
+      alert('Error al cargar la tienda');
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id, router]);
+
+  useEffect(() => {
+    fetchStore();
+  }, [fetchStore]);
 
   const handleSave = async () => {
     try {

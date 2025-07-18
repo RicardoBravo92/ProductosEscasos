@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import Link from 'next/link';
@@ -64,14 +64,8 @@ export default function ProductComparisonPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchData();
-    fetchStores();
-  }, [params.id]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/compare/${params.id}`);
@@ -93,7 +87,12 @@ export default function ProductComparisonPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id, router]);
+
+  useEffect(() => {
+    fetchData();
+    fetchStores();
+  }, [fetchData]);
 
   const fetchStores = async () => {
     try {

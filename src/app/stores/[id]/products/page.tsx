@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Link from 'next/link';
 
@@ -33,7 +33,6 @@ interface ProductPrice {
 
 export default function StoreProductsPage() {
   const params = useParams();
-  const router = useRouter();
   const [products, setProducts] = useState<ProductPrice[]>([]);
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,13 +42,7 @@ export default function StoreProductsPage() {
 
   const storeId = params.id as string;
 
-  useEffect(() => {
-    if (storeId) {
-      fetchStoreAndProducts();
-    }
-  }, [storeId]);
-
-  const fetchStoreAndProducts = async () => {
+  const fetchStoreAndProducts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -75,7 +68,13 @@ export default function StoreProductsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
+
+  useEffect(() => {
+    if (storeId) {
+      fetchStoreAndProducts();
+    }
+  }, [storeId, fetchStoreAndProducts]);
 
       // Filter products based on search term and availability
     const filteredProducts = products.filter((productPrice) => {
@@ -303,7 +302,7 @@ export default function StoreProductsPage() {
                       
                       {productPrice.notes && (
                         <p className="text-sm text-gray-600 italic">
-                          "{productPrice.notes}"
+                          &quot;{productPrice.notes}&quot;
                         </p>
                       )}
                       
