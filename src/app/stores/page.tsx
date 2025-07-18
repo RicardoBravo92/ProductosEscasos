@@ -107,7 +107,7 @@ function MainContent({ stores, loading, hasMore, sortBy, order, setSortBy, setOr
           <label htmlFor="sort" className="text-sm text-gray-700">Ordenar por:</label>
           <select
             id="sort"
-            className="border rounded px-2 py-1 text-sm"
+            className="border rounded px-3 py-1 text-sm min-w-[180px]"
             value={sortBy + '-' + order}
             onChange={e => {
               const [field, ord] = e.target.value.split('-');

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Header from '@/components/Header';
 import Link from 'next/link';
@@ -45,6 +45,18 @@ export default function StoreProductsPage() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [paginatedProducts, setPaginatedProducts] = useState<ProductPrice[]>([]);
+
+  const [copied, setCopied] = useState(false);
+  const shareTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const handleShare = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      if (shareTimeout.current) clearTimeout(shareTimeout.current);
+      shareTimeout.current = setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const storeId = params.id as string;
 
@@ -204,7 +216,21 @@ export default function StoreProductsPage() {
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Productos en {store.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+                Productos en {store.name}
+                <button
+                  onClick={handleShare}
+                  title="Compartir enlace"
+                  className="ml-2 p-2 rounded-full bg-gray-100 hover:bg-blue-100 border border-gray-200 transition-colors flex items-center gap-1"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-600">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 15l-6-6m0 0l6-6m-6 6h12" />
+                  </svg>
+                  <span className="hidden sm:inline text-blue-600 text-xs">Compartir</span>
+                </button>
+                {copied && <span className="ml-2 text-green-600 text-sm">¡Enlace copiado!</span>}
+              </h1>
               <div className="space-y-1 text-gray-600">
                 {store.address && (
                   <p className="flex items-center">
