@@ -18,7 +18,20 @@ export async function GET(request: NextRequest) {
       ];
     }
     
-    const products = await Product.find(query).sort({ createdAt: -1 });
+    // Paginado y ordenamiento
+    const skip = parseInt(searchParams.get('skip') || '0', 10);
+    const limit = parseInt(searchParams.get('limit') || '12', 10);
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const order = searchParams.get('order') === 'asc' ? 1 : -1;
+
+    // Validar sortBy
+    const validSortFields = ['createdAt', 'name'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+
+    const products = await Product.find(query)
+      .sort({ [sortField]: order })
+      .skip(skip)
+      .limit(limit);
     return NextResponse.json(products);
   } catch (error) {
     console.error('Error fetching products:', error);

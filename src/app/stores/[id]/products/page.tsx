@@ -33,12 +33,18 @@ interface ProductPrice {
 
 export default function StoreProductsPage() {
   const params = useParams();
-  const [products, setProducts] = useState<ProductPrice[]>([]);
   const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
+
+  // Estado para paginado
+  const [skip, setSkip] = useState(0);
+  const [limit] = useState(12);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [paginatedProducts, setPaginatedProducts] = useState<ProductPrice[]>([]);
 
   const storeId = params.id as string;
 
@@ -61,7 +67,7 @@ export default function StoreProductsPage() {
         throw new Error('Error al cargar los productos');
       }
       const productsData = await productsResponse.json();
-      setProducts(productsData);
+      setPaginatedProducts(productsData);
     } catch (error) {
       console.error('Error fetching store and products:', error);
       setError(error instanceof Error ? error.message : 'Error al cargar los datos');
@@ -70,24 +76,56 @@ export default function StoreProductsPage() {
     }
   }, [storeId]);
 
+  // Fetch paginado de productos
+  const fetchPaginatedProducts = useCallback(async (reset = false) => {
+    if (!storeId) return;
+    if (reset) setLoading(true);
+    else setLoadingMore(true);
+    try {
+      const params = new URLSearchParams();
+      params.append('storeId', storeId);
+      params.append('skip', reset ? '0' : skip.toString());
+      params.append('limit', limit.toString());
+      const response = await fetch(`/api/prices?${params.toString()}`);
+      const data = await response.json();
+      if (response.ok) {
+        if (reset) {
+          setPaginatedProducts(data);
+        } else {
+          setPaginatedProducts((prev) => [...prev, ...data]);
+        }
+        setHasMore(data.length === limit);
+      }
+    } catch (error) {
+      console.error('Error fetching paginated products:', error);
+    } finally {
+      if (reset) setLoading(false);
+      else setLoadingMore(false);
+    }
+  }, [storeId, skip, limit]);
+
+  // Resetear productos al cambiar búsqueda o filtro
+  useEffect(() => {
+    setSkip(0);
+    fetchPaginatedProducts(true);
+  }, [storeId, searchTerm, availabilityFilter, fetchPaginatedProducts]);
+
+  // Cargar más productos
+  const handleLoadMore = () => {
+    setSkip((prev) => prev + limit);
+  };
+
+  // Cargar más cuando skip cambie (pero no en el primer render)
+  useEffect(() => {
+    if (skip === 0) return;
+    fetchPaginatedProducts();
+  }, [skip, fetchPaginatedProducts]);
+
   useEffect(() => {
     if (storeId) {
       fetchStoreAndProducts();
     }
   }, [storeId, fetchStoreAndProducts]);
-
-      // Filter products based on search term and availability
-    const filteredProducts = products.filter((productPrice) => {
-      const product = productPrice.productId;
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           product.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesAvailability = availabilityFilter === 'all' || 
-                                 (availabilityFilter === 'available' && productPrice.isAvailable) ||
-                                 (availabilityFilter === 'unavailable' && !productPrice.isAvailable);
-      
-      return matchesSearch && matchesAvailability;
-    });
 
   if (loading) {
     return (
@@ -232,14 +270,14 @@ export default function StoreProductsPage() {
             {/* Results Count */}
             <div className="flex items-end">
               <div className="text-sm text-gray-600">
-                {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
+                {paginatedProducts.length} producto{paginatedProducts.length !== 1 ? 's' : ''} encontrado{paginatedProducts.length !== 1 ? 's' : ''}
               </div>
             </div>
           </div>
         </div>
 
         {/* Products Grid */}
-        {filteredProducts.length === 0 ? (
+        {paginatedProducts.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,73 +286,90 @@ export default function StoreProductsPage() {
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron productos</h3>
             <p className="text-gray-600">
-              {products.length === 0 
-                ? 'Esta tienda no tiene productos registrados aún.'
-                : 'No hay productos que coincidan con los filtros aplicados.'
-              }
+              Prueba con otro término de búsqueda o filtro.
             </p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProducts.map((productPrice) => {
-              const product = productPrice.productId;
-              return (
-                              <div key={productPrice._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="p-6">
-                  {/* Product Info */}
-                  <div className="mb-4">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      <Link 
-                        href={`/products/${product._id}`}
-                        className="hover:text-blue-600 transition-colors"
-                      >
-                        {product.name}
-                      </Link>
-                    </h3>
-                    
-                    {product.description && (
-                      <p className="text-gray-700 text-sm mb-2 line-clamp-2">
-                        {product.description}
-                      </p>
-                    )}
-                  </div>
-
-                    {/* Price and Availability */}
-                    <div className="border-t border-gray-200 pt-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-2xl font-bold text-gray-900">
-                          ${productPrice.price.toFixed(2)}
-                        </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          productPrice.isAvailable 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {productPrice.isAvailable ? 'Disponible' : 'No disponible'}
-                        </span>
+          <>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedProducts
+                .filter((productPrice) => {
+                  const product = productPrice.productId;
+                  const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    product.description?.toLowerCase().includes(searchTerm.toLowerCase());
+                  const matchesAvailability = availabilityFilter === 'all' ||
+                    (availabilityFilter === 'available' && productPrice.isAvailable) ||
+                    (availabilityFilter === 'unavailable' && !productPrice.isAvailable);
+                  return matchesSearch && matchesAvailability;
+                })
+                .map((productPrice) => (
+                  <div key={productPrice._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="p-6">
+                      {/* Product Info */}
+                      <div className="mb-4">
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                          <Link 
+                            href={`/products/${productPrice.productId._id}`}
+                            className="hover:text-blue-600 transition-colors"
+                          >
+                            {productPrice.productId.name}
+                          </Link>
+                        </h3>
+                        
+                        {productPrice.productId.description && (
+                          <p className="text-gray-700 text-sm mb-2 line-clamp-2">
+                            {productPrice.productId.description}
+                          </p>
+                        )}
                       </div>
-                      
-                      {productPrice.stockQuantity > 0 && (
-                        <p className="text-sm text-gray-600 mb-2">
-                          Stock: {productPrice.stockQuantity} unidades
-                        </p>
-                      )}
-                      
-                      {productPrice.notes && (
-                        <p className="text-sm text-gray-600 italic">
-                          &quot;{productPrice.notes}&quot;
-                        </p>
-                      )}
-                      
-                      <p className="text-xs text-gray-500 mt-2">
-                        Actualizado: {new Date(productPrice.lastUpdated).toLocaleDateString()}
-                      </p>
+
+                        {/* Price and Availability */}
+                        <div className="border-t border-gray-200 pt-4">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-2xl font-bold text-gray-900">
+                              ${productPrice.price.toFixed(2)}
+                            </span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              productPrice.isAvailable 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {productPrice.isAvailable ? 'Disponible' : 'No disponible'}
+                            </span>
+                          </div>
+                          
+                          {productPrice.stockQuantity > 0 && (
+                            <p className="text-sm text-gray-600 mb-2">
+                              Stock: {productPrice.stockQuantity} unidades
+                            </p>
+                          )}
+                          
+                          {productPrice.notes && (
+                            <p className="text-sm text-gray-600 italic">
+                              &quot;{productPrice.notes}&quot;
+                            </p>
+                          )}
+                          
+                          <p className="text-xs text-gray-500 mt-2">
+                            Actualizado: {new Date(productPrice.lastUpdated).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  ))}
+            </div>
+            {hasMore && (
+              <div className="flex justify-center mt-8">
+                <button
+                  onClick={handleLoadMore}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? 'Cargando...' : 'Agregar más'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>

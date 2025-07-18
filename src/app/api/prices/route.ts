@@ -25,10 +25,26 @@ export async function GET(request: NextRequest) {
       query.isAvailable = true;
     }
     
+    // Paginado y ordenamiento
+    const skip = parseInt(searchParams.get('skip') || '0', 10);
+    const limit = parseInt(searchParams.get('limit') || '12', 10);
+    const sortBy = searchParams.get('sortBy') || 'lastUpdated';
+    const order = searchParams.get('order') === 'asc' ? 1 : -1;
+    let sort: Record<string, 1 | -1> = {};
+    if (sortBy === 'productName') {
+      sort = { 'productId.name': order };
+    } else if (['lastUpdated', 'price'].includes(sortBy)) {
+      sort = { [sortBy]: order };
+    } else {
+      sort = { lastUpdated: -1 };
+    }
+
     const prices = await ProductPrice.find(query)
       .populate('productId', 'name description')
       .populate('storeId', 'name address phone website')
-      .sort({ lastUpdated: -1 });
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
     
     return NextResponse.json(prices);
   } catch (error) {

@@ -3,10 +3,32 @@ import connectDB from '@/lib/mongodb';
 import Store from '@/lib/models/Store';
 
 // GET - Obtener todas las tiendas
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await connectDB();
-    const stores = await Store.find({}).sort({ createdAt: -1 });
+    const { searchParams } = new URL(request.url);
+
+    // Paginado y ordenamiento
+    const skip = parseInt(searchParams.get('skip') || '0', 10);
+    const limit = parseInt(searchParams.get('limit') || '12', 10);
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const order = searchParams.get('order') === 'asc' ? 1 : -1;
+    const validSortFields = ['createdAt', 'name'];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+
+    // Filtro de búsqueda opcional
+    const query: Record<string, unknown> = {};
+    if (searchParams.get('search')) {
+      query.$or = [
+        { name: { $regex: searchParams.get('search'), $options: 'i' } },
+        { description: { $regex: searchParams.get('search'), $options: 'i' } }
+      ];
+    }
+
+    const stores = await Store.find(query)
+      .sort({ [sortField]: order })
+      .skip(skip)
+      .limit(limit);
     return NextResponse.json(stores);
   } catch (error) {
     console.error('Error fetching stores:', error);

@@ -30,7 +30,7 @@ Una aplicación web para encontrar y comparar precios de productos en diferentes
 
 1. **Clona el repositorio**
    ```bash
-   git clone <url-del-repositorio>
+   git clone git@github.com:RicardoBravo92/ProductosEscasos.git
    cd productos-escasos
    ```
 
@@ -130,14 +130,6 @@ src/
 1. Conecta tu repositorio a Vercel
 2. Configura la variable de entorno `MONGODB_URI`
 3. Deploy automático en cada push
-
-### Otros proveedores
-
-La aplicación es compatible con cualquier proveedor que soporte Next.js:
-- Netlify
-- Railway
-- DigitalOcean App Platform
-- AWS Amplify
 
 ## Contribuir
 

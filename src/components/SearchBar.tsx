@@ -3,14 +3,21 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function SearchBar() {
+interface SearchBarProps {
+  basePath?: string;
+  placeholder?: string;
+}
+
+export default function SearchBar({ basePath = '/products', placeholder = 'Buscar productos...' }: SearchBarProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      router.push(`/products?search=${encodeURIComponent(searchTerm.trim())}`);
+      router.push(`${basePath}?search=${encodeURIComponent(searchTerm.trim())}`);
+    } else {
+      router.push(basePath);
     }
   };
 
@@ -21,7 +28,7 @@ export default function SearchBar() {
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Buscar productos..."
+          placeholder={placeholder}
           className="w-full px-4 py-3 pl-12 pr-4 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
         <div className="absolute inset-y-0 left-0 flex items-center pl-3">

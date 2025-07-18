@@ -65,6 +65,15 @@ export default function ProductComparisonPage() {
   const [submitting, setSubmitting] = useState(false);
   const [editing, setEditing] = useState(false);
 
+  // Estado para paginado y ordenamiento de precios
+  const [priceSkip, setPriceSkip] = useState(0);
+  const [priceLimit] = useState(10);
+  const [priceHasMore, setPriceHasMore] = useState(true);
+  const [priceSortBy, setPriceSortBy] = useState<'price' | 'lastUpdated' | 'storeName'>('price');
+  const [priceOrder, setPriceOrder] = useState<'asc' | 'desc'>('asc');
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [paginatedPrices, setPaginatedPrices] = useState<Price[]>([]);
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -189,6 +198,49 @@ export default function ProductComparisonPage() {
     // setEditingPriceId(price._id);
   }
 
+  // Fetch paginado de precios
+  const fetchPaginatedPrices = useCallback(async (reset = false) => {
+    setPriceLoading(true);
+    try {
+      const paramsUrl = new URLSearchParams();
+      paramsUrl.append('skip', reset ? '0' : priceSkip.toString());
+      paramsUrl.append('limit', priceLimit.toString());
+      paramsUrl.append('sortBy', priceSortBy);
+      paramsUrl.append('order', priceOrder);
+      const response = await fetch(`/api/compare/${params.id}?${paramsUrl.toString()}`);
+      const data = await response.json();
+      if (response.ok) {
+        if (reset) {
+          setPaginatedPrices(data.prices);
+        } else {
+          setPaginatedPrices((prev) => [...prev, ...data.prices]);
+        }
+        setPriceHasMore(data.prices.length === priceLimit);
+      }
+    } catch (error) {
+      console.error('Error fetching paginated prices:', error);
+    } finally {
+      setPriceLoading(false);
+    }
+  }, [params.id, priceSkip, priceLimit, priceSortBy, priceOrder]);
+
+  // Resetear precios al cambiar orden
+  useEffect(() => {
+    setPriceSkip(0);
+    fetchPaginatedPrices(true);
+  }, [priceSortBy, priceOrder, params.id, fetchPaginatedPrices]);
+
+  // Cargar más precios
+  const handleLoadMorePrices = () => {
+    setPriceSkip((prev) => prev + priceLimit);
+  };
+
+  // Cargar más cuando skip cambie (pero no en el primer render)
+  useEffect(() => {
+    if (priceSkip === 0) return;
+    fetchPaginatedPrices();
+  }, [priceSkip, fetchPaginatedPrices]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -215,8 +267,7 @@ export default function ProductComparisonPage() {
     );
   }
 
-  const { product, prices, stats } = data;
-  const availablePrices = prices.filter(p => p.isAvailable).sort((a, b) => a.price - b.price);
+  const { product, stats } = data;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -433,98 +484,96 @@ export default function ProductComparisonPage() {
         {
 !isEditing&&
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <h2 className="text-xl font-semibold text-gray-900">Precios por Tienda</h2>
+            <div className="flex gap-2 items-center">
+              <label htmlFor="price-sort" className="text-sm text-gray-700">Ordenar por:</label>
+              <select
+                id="price-sort"
+                className="border rounded px-2 py-1 text-sm"
+                value={priceSortBy + '-' + priceOrder}
+                onChange={e => {
+                  const [field, ord] = e.target.value.split('-');
+                  setPriceSortBy(field as 'price' | 'lastUpdated' | 'storeName');
+                  setPriceOrder(ord as 'asc' | 'desc');
+                }}
+              >
+                <option value="price-asc">Precio (menor a mayor)</option>
+                <option value="price-desc">Precio (mayor a menor)</option>
+                <option value="lastUpdated-desc">Más reciente</option>
+                <option value="lastUpdated-asc">Más antiguo</option>
+                <option value="storeName-asc">Tienda (A-Z)</option>
+                <option value="storeName-desc">Tienda (Z-A)</option>
+              </select>
+            </div>
           </div>
-          
-          {prices.length === 0 ? (
+          {paginatedPrices.length === 0 && !priceLoading ? (
             <div className="p-6 text-center text-gray-600">
               No hay precios registrados para este producto
             </div>
           ) : (
-            <div className="divide-y divide-gray-200">
-              {availablePrices.map((price) => (
-                <div
-                  key={price._id}
-                  className="p-6 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => handlePriceClick(price)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {price.storeId.name}
-                      </h3>
-                      {price.storeId.address && (
-                        <p className="text-sm text-gray-600 mt-1">{price.storeId.address}</p>
-                      )}
-                      {price.notes && (
-                        <p className="text-sm text-gray-500 mt-1">{price.notes}</p>
-                      )}
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                        {price.storeId.phone && (
-                          <span>📞 {price.storeId.phone}</span>
+            <>
+              <div className="divide-y divide-gray-200">
+                {paginatedPrices.map((price) => (
+                  <div
+                    key={price._id}
+                    className="p-6 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => handlePriceClick(price)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {price.storeId.name}
+                        </h3>
+                        {price.storeId.address && (
+                          <p className="text-sm text-gray-600 mt-1">{price.storeId.address}</p>
                         )}
-                        {price.storeId.website && (
-                          <a
-                            href={price.storeId.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            🌐 Visitar sitio
-                          </a>
+                        {price.notes && (
+                          <p className="text-sm text-gray-500 mt-1">{price.notes}</p>
                         )}
-                        {price.stockQuantity > 0 && (
-                          <span>📦 Stock: {price.stockQuantity}</span>
-                        )}
+                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                          {price.storeId.phone && (
+                            <span>📞 {price.storeId.phone}</span>
+                          )}
+                          {price.storeId.website && (
+                            <a
+                              href={price.storeId.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              🌐 Visitar sitio
+                            </a>
+                          )}
+                          {price.stockQuantity > 0 && (
+                            <span>📦 Stock: {price.stockQuantity}</span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-green-600">
-                        {price.price.toFixed(2)} {price.currency}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Actualizado: {new Date(price.lastUpdated).toLocaleDateString()}
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-600">
+                          {price.price.toFixed(2)} {price.currency}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Actualizado: {new Date(price.lastUpdated).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
+              {priceHasMore && (
+                <div className="flex justify-center mt-8">
+                  <button
+                    onClick={handleLoadMorePrices}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    disabled={priceLoading}
+                  >
+                    {priceLoading ? 'Cargando...' : 'Agregar más'}
+                  </button>
                 </div>
-              ))}
-              
-              {/* Unavailable prices */}
-              {prices.filter(p => !p.isAvailable).map((price) => (
-                <div
-                  key={price._id}
-                  className="p-6 hover:bg-gray-50 bg-gray-50 cursor-pointer"
-                  onClick={() => handlePriceClick(price)}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {price.storeId.name}
-                      </h3>
-                      {price.storeId.address && (
-                        <p className="text-sm text-gray-600 mt-1">{price.storeId.address}</p>
-                      )}
-                      {price.notes && (
-                        <p className="text-sm text-gray-500 mt-1">{price.notes}</p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-semibold text-red-600">
-                        No disponible
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Último precio: {price.price.toFixed(2)} {price.currency}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {new Date(price.lastUpdated).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
         }
