@@ -9,7 +9,7 @@ import { Suspense } from 'react';
 import Image from 'next/image';
 
 interface Product {
-  _id: string;
+  id: string;
   name: string;
   description: string;
   createdAt: string;
@@ -136,7 +136,7 @@ function MainContent() {
         <>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {products.map((product) => (
-              <div key={product._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+              <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                 {product.image && (
                   <Image
                     src={product.image}
@@ -154,7 +154,7 @@ function MainContent() {
                   )}
                   <div className="flex justify-between items-center">
                     <Link
-                      href={`/products/${product._id}`}
+                      href={`/products/${product.id}`}
                       className="text-blue-600 hover:text-blue-800 font-medium"
                     >
                       Ver precios →

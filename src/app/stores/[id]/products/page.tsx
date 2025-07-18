@@ -6,13 +6,13 @@ import Header from '@/components/Header';
 import Link from 'next/link';
 
 interface Product {
-  _id: string;
+  id: string;
   name: string;
   description: string;
 }
 
 interface Store {
-  _id: string;
+  id: string;
   name: string;
   address: string;
   phone: string;
@@ -20,7 +20,7 @@ interface Store {
 }
 
 interface ProductPrice {
-  _id: string;
+  id: string;
   productId: Product;
   storeId: Store;
   price: number;
@@ -329,13 +329,13 @@ export default function StoreProductsPage() {
                   return matchesSearch && matchesAvailability;
                 })
                 .map((productPrice) => (
-                  <div key={productPrice._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div key={productPrice.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="p-6">
                       {/* Product Info */}
                       <div className="mb-4">
                         <h3 className="text-xl font-semibold text-gray-900 mb-2">
                           <Link 
-                            href={`/products/${productPrice.productId._id}`}
+                            href={`/products/${productPrice.productId.id}`}
                             className="hover:text-blue-600 transition-colors"
                           >
                             {productPrice.productId.name}

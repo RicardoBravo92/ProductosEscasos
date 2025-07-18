@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 interface Store {
-  _id: string;
+  id: string;
   name: string;
   description: string;
   address: string;

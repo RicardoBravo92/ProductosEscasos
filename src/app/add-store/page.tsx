@@ -33,7 +33,7 @@ export default function AddStorePage() {
       });
       if (response.ok) {
         const store = await response.json();
-        router.push(`/stores/${store._id}`);
+        router.push(`/stores/${store.id}`);
       } else {
         const error = await response.json();
         alert(`Error: ${error.error}`);

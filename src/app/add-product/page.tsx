@@ -29,7 +29,7 @@ export default function AddProductPage() {
 
       if (response.ok) {
         const product = await response.json();
-        router.push(`/products/${product._id}`);
+        router.push(`/products/${product.id}`);
       } else {
         const error = await response.json();
         alert(`Error: ${error.error}`);

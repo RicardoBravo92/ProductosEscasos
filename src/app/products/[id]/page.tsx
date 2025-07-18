@@ -7,14 +7,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 interface Product {
-  _id: string;
+  id: string;
   name: string;
   description: string;
   image?: string;
 }
 
 interface Store {
-  _id: string;
+  id: string;
   name: string;
   address: string;
   phone: string;
@@ -22,7 +22,7 @@ interface Store {
 }
 
 interface Price {
-  _id: string;
+  id: string;
   price: number;
   currency: string;
   isAvailable: boolean;
@@ -234,7 +234,7 @@ export default function ProductComparisonPage() {
 
   function handlePriceClick(price: Price) {
     setPriceForm({
-      storeId: price.storeId._id,
+      storeId: price.storeId.id,
       price: price.price.toString(),
       currency: price.currency,
       isAvailable: price.isAvailable,
@@ -242,7 +242,7 @@ export default function ProductComparisonPage() {
     });
     setShowAddPriceForm(true);
     // Si quieres modo edición, puedes guardar el id:
-    // setEditingPriceId(price._id);
+    // setEditingPriceId(price.id);
   }
 
   // Fetch paginado de precios
@@ -482,7 +482,7 @@ export default function ProductComparisonPage() {
                   >
                     <option value="">Seleccionar tienda</option>
                     {stores.map((store) => (
-                      <option key={store._id} value={store._id}>
+                      <option key={store.id} value={store.id}>
                         {store.name}
                       </option>
                     ))}
@@ -620,7 +620,7 @@ export default function ProductComparisonPage() {
               <div className="divide-y divide-gray-200">
                 {paginatedPrices.map((price) => (
                   <div
-                    key={price._id}
+                    key={price.id}
                     className="p-6 hover:bg-gray-50 cursor-pointer"
                     onClick={() => handlePriceClick(price)}
                   >

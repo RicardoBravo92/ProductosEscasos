@@ -7,7 +7,7 @@ import SearchBar from '@/components/SearchBar';
 import Image from 'next/image';
 
 interface Store {
-  _id: string;
+  id: string;
   name: string;
   description: string;
   address: string;
@@ -155,7 +155,7 @@ function MainContent({ stores, loading, hasMore, sortBy, order, setSortBy, setOr
         <>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {stores.map((store: Store) => (
-              <div key={store._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+              <div key={store.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                 {store.image && (
                   <Image
                     src={store.image}
@@ -173,7 +173,7 @@ function MainContent({ stores, loading, hasMore, sortBy, order, setSortBy, setOr
                   )}
                   <div className="flex justify-between items-center">
                     <Link
-                      href={`/stores/${store._id}`}
+                      href={`/stores/${store.id}`}
                       className="text-blue-600 hover:text-blue-800 font-medium"
                     >
                       Ver detalles →
